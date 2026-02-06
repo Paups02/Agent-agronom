@@ -1,6 +1,9 @@
 """API REST de l'agent agronòmic amb FastAPI."""
 
+import json
+
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from agronom_agent.models.soil import SoilAnalysis
@@ -21,6 +24,14 @@ app = FastAPI(
 )
 
 agent = AgronomAgent()
+
+
+def utf8_json(data) -> Response:
+    """Retorna JSON amb UTF-8 correcte (caràcters catalans visibles)."""
+    return Response(
+        content=json.dumps(data, ensure_ascii=False, indent=2),
+        media_type="application/json; charset=utf-8",
+    )
 
 
 class FullDiagnosisRequest(BaseModel):
@@ -46,7 +57,7 @@ class IrrigationRequest(BaseModel):
 @app.get("/")
 def root():
     """Informació de l'API."""
-    return {
+    return utf8_json({
         "name": "AgroNom Agent",
         "version": "1.0.0",
         "description": "Agent IA agronòmic professional",
@@ -58,7 +69,7 @@ def root():
             "/crops — Llista de cultius disponibles",
             "/crops/{name} — Informació d'un cultiu",
         ],
-    }
+    })
 
 
 @app.post("/diagnosis")
@@ -70,34 +81,34 @@ def full_diagnosis(request: FullDiagnosisRequest):
         weather=request.weather,
         farm_id=request.farm_id,
     )
-    return report.model_dump()
+    return utf8_json(report.model_dump())
 
 
 @app.post("/soil")
 def soil_diagnosis(soil: SoilAnalysis):
     """Diagnòstic ràpid de sòl."""
     diagnosis = agent.quick_soil_check(soil)
-    return diagnosis.model_dump()
+    return utf8_json(diagnosis.model_dump())
 
 
 @app.post("/pests")
 def pest_check(request: PestCheckRequest):
     """Consulta d'alertes fitosanitàries."""
     alerts = agent.quick_pest_check(request.crop, request.weather)
-    return [alert.model_dump() for alert in alerts]
+    return utf8_json([alert.model_dump() for alert in alerts])
 
 
 @app.post("/irrigation")
 def irrigation_plan(request: IrrigationRequest):
     """Càlcul de necessitats de reg."""
     plan = agent.quick_irrigation(request.crop, request.weather)
-    return plan.model_dump()
+    return utf8_json(plan.model_dump())
 
 
 @app.get("/crops")
 def available_crops():
     """Llista de cultius disponibles a la base de dades."""
-    return {"crops": list_crops()}
+    return utf8_json({"crops": list_crops()})
 
 
 @app.get("/crops/{name}")
@@ -109,4 +120,4 @@ def crop_info(name: str):
             status_code=404,
             detail=f"Cultiu '{name}' no trobat. Useu /crops per veure disponibles.",
         )
-    return crop.model_dump()
+    return utf8_json(crop.model_dump())
