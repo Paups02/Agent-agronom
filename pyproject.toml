@@ -48,3 +48,6 @@ asyncio_mode = "auto"
 
 [tool.setuptools.packages.find]
 include = ["agronom_agent*"]
+
+[tool.setuptools.package-data]
+agronom_agent = ["static/*"]

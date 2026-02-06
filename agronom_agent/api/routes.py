@@ -1,9 +1,11 @@
 """API REST de l'agent agronòmic amb FastAPI."""
 
 import json
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from agronom_agent.models.soil import SoilAnalysis
@@ -12,6 +14,8 @@ from agronom_agent.models.climate import WeatherData
 from agronom_agent.services.agent import AgronomAgent
 from agronom_agent.data.crop_database import list_crops, get_crop
 
+
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 app = FastAPI(
     title="AgroNom Agent API",
@@ -22,6 +26,9 @@ app = FastAPI(
     ),
     version="1.0.0",
 )
+
+# Servir fitxers estàtics (CSS, JS)
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 agent = AgronomAgent()
 
@@ -54,8 +61,14 @@ class IrrigationRequest(BaseModel):
     weather: WeatherData
 
 
-@app.get("/")
-def root():
+@app.get("/", include_in_schema=False)
+def homepage():
+    """Serveix la interfície web SaaS."""
+    return FileResponse(str(STATIC_DIR / "index.html"), media_type="text/html")
+
+
+@app.get("/api")
+def api_info():
     """Informació de l'API."""
     return utf8_json({
         "name": "AgroNom Agent",

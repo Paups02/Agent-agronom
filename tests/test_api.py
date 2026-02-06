@@ -41,8 +41,14 @@ def diagnosis_payload():
 
 
 class TestAPI:
-    def test_root(self, client):
+    def test_root_serves_html(self, client):
         response = client.get("/")
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+        assert "AgroNom" in response.text
+
+    def test_api_info(self, client):
+        response = client.get("/api")
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "AgroNom Agent"
