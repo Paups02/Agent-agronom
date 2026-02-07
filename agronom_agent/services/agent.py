@@ -1,7 +1,7 @@
 """Agent agronòmic central — Orquestrador principal.
 
-Coordina tots els serveis (sòl, clima, fitosanitari, fertilització)
-per generar informes integrals i recomanacions prioritzades.
+Coordina tots els serveis (sòl, clima, fitosanitari, fertilització,
+gràfics, economia, IA) per generar informes integrals.
 """
 
 from agronom_agent.models.soil import SoilAnalysis
@@ -12,6 +12,13 @@ from agronom_agent.services.soil_analyzer import SoilAnalyzer
 from agronom_agent.services.climate_analyzer import ClimateAnalyzer
 from agronom_agent.services.pest_advisor import PestAdvisor
 from agronom_agent.services.fertilization_planner import FertilizationPlanner
+from agronom_agent.services.economic_calculator import EconomicCalculator
+from agronom_agent.services.chart_generator import (
+    generate_soil_radar,
+    generate_npk_chart,
+    generate_irrigation_chart,
+    generate_economic_chart,
+)
 
 
 class AgronomAgent:
@@ -22,6 +29,7 @@ class AgronomAgent:
         self.climate_analyzer = ClimateAnalyzer()
         self.pest_advisor = PestAdvisor()
         self.fertilization_planner = FertilizationPlanner()
+        self.economic_calculator = EconomicCalculator()
 
     def full_diagnosis(
         self,
@@ -67,6 +75,54 @@ class AgronomAgent:
             priority_actions=priority_actions,
             estimated_savings_eur=savings,
         )
+
+    def full_report_with_charts(
+        self,
+        soil: SoilAnalysis,
+        crop: CropProfile,
+        weather: WeatherData,
+        farm_id: str = "FARM-001",
+    ) -> dict:
+        """Genera informe complet AMB gràfics i anàlisi econòmica."""
+        # Diagnòstic base
+        report = self.full_diagnosis(soil, crop, weather, farm_id)
+        soil_diagnosis = self.soil_analyzer.diagnose(soil)
+
+        # Gràfics
+        charts = {}
+        try:
+            charts["soil_radar"] = generate_soil_radar(soil_diagnosis.model_dump())
+        except Exception:
+            charts["soil_radar"] = None
+        try:
+            charts["npk_chart"] = generate_npk_chart(
+                report.fertilization_plan.model_dump()
+            )
+        except Exception:
+            charts["npk_chart"] = None
+        try:
+            charts["irrigation_chart"] = generate_irrigation_chart(
+                report.irrigation_plan
+            )
+        except Exception:
+            charts["irrigation_chart"] = None
+
+        # Anàlisi econòmica
+        economics = self.economic_calculator.calculate(
+            crop, report.fertilization_plan,
+            report.irrigation_plan, report.soil_score,
+        )
+
+        try:
+            charts["economic_chart"] = generate_economic_chart(economics)
+        except Exception:
+            charts["economic_chart"] = None
+
+        return {
+            **report.model_dump(),
+            "charts": charts,
+            "economics": economics,
+        }
 
     def quick_soil_check(self, soil: SoilAnalysis):
         """Diagnòstic ràpid només de sòl."""
@@ -128,13 +184,8 @@ class AgronomAgent:
     def _estimate_savings(self, soil_diag, crop, fert_plan) -> float:
         """Estima l'estalvi econòmic de seguir les recomanacions."""
         savings = 0.0
-
-        # Estalvi per optimització de fertilització vs aplicació genèrica
-        generic_cost = 350.0  # Cost mitjà sense assessoria (EUR/ha)
+        generic_cost = 350.0
         savings += max(0, generic_cost - fert_plan.estimated_cost_eur_ha)
-
-        # Estalvi per prevenció de plagues (evitar pèrdues de collita)
         if soil_diag.score < 60:
-            savings += crop.area_hectares * 50  # Correcció evita pèrdues
-
+            savings += crop.area_hectares * 50
         return round(savings, 2)

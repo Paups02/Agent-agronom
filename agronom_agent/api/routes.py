@@ -12,6 +12,7 @@ from agronom_agent.models.soil import SoilAnalysis
 from agronom_agent.models.crop import CropProfile
 from agronom_agent.models.climate import WeatherData
 from agronom_agent.services.agent import AgronomAgent
+from agronom_agent.services.gemini_advisor import ask_gemini
 from agronom_agent.data.crop_database import list_crops, get_crop
 
 
@@ -21,10 +22,10 @@ app = FastAPI(
     title="AgroNom Agent API",
     description=(
         "Agent IA agronòmic professional. Diagnòstic de sòl, "
-        "fertilització intel·ligent, alertes fitosanitàries "
-        "i planificació de reg personalitzada."
+        "fertilització intel·ligent, alertes fitosanitàries, "
+        "planificació de reg, gràfics i assessor IA."
     ),
-    version="1.0.0",
+    version="2.0.0",
 )
 
 # Servir fitxers estàtics (CSS, JS)
@@ -42,7 +43,6 @@ def utf8_json(data) -> Response:
 
 
 class FullDiagnosisRequest(BaseModel):
-    """Petició de diagnòstic complet."""
     soil: SoilAnalysis
     crop: CropProfile
     weather: WeatherData
@@ -50,44 +50,67 @@ class FullDiagnosisRequest(BaseModel):
 
 
 class PestCheckRequest(BaseModel):
-    """Petició de consulta fitosanitària."""
     crop: CropProfile
     weather: WeatherData
 
 
 class IrrigationRequest(BaseModel):
-    """Petició de càlcul de reg."""
     crop: CropProfile
     weather: WeatherData
 
 
+class ChatRequest(BaseModel):
+    question: str
+    context: str = ""
+    api_key: str = ""
+
+
+# ─── FRONTEND ───
+
 @app.get("/", include_in_schema=False)
 def homepage():
-    """Serveix la interfície web SaaS."""
     return FileResponse(str(STATIC_DIR / "index.html"), media_type="text/html")
 
 
+# ─── API INFO ───
+
 @app.get("/api")
 def api_info():
-    """Informació de l'API."""
     return utf8_json({
         "name": "AgroNom Agent",
-        "version": "1.0.0",
-        "description": "Agent IA agronòmic professional",
+        "version": "2.0.0",
+        "description": "Agent IA agronòmic professional amb gràfics, economia i assessor IA",
         "endpoints": [
-            "/diagnosis — Diagnòstic complet (sòl + cultiu + clima)",
-            "/soil — Diagnòstic ràpid de sòl",
-            "/pests — Alertes fitosanitàries",
-            "/irrigation — Planificació de reg",
-            "/crops — Llista de cultius disponibles",
-            "/crops/{name} — Informació d'un cultiu",
+            "/report — Informe complet amb gràfics i economia (POST)",
+            "/diagnosis — Diagnòstic complet (POST)",
+            "/soil — Diagnòstic ràpid de sòl (POST)",
+            "/pests — Alertes fitosanitàries (POST)",
+            "/irrigation — Planificació de reg (POST)",
+            "/chat — Assessor IA agronòmic (POST)",
+            "/crops — Llista de cultius (GET)",
+            "/crops/{name} — Info d'un cultiu (GET)",
         ],
     })
 
 
+# ─── REPORT COMPLET AMB GRÀFICS ───
+
+@app.post("/report")
+def full_report(request: FullDiagnosisRequest):
+    """Informe complet amb gràfics matplotlib i anàlisi econòmica."""
+    result = agent.full_report_with_charts(
+        soil=request.soil,
+        crop=request.crop,
+        weather=request.weather,
+        farm_id=request.farm_id,
+    )
+    return utf8_json(result)
+
+
+# ─── DIAGNÒSTIC (sense gràfics) ───
+
 @app.post("/diagnosis")
 def full_diagnosis(request: FullDiagnosisRequest):
-    """Diagnòstic complet: sòl + clima + plagues + fertilització + reg."""
     report = agent.full_diagnosis(
         soil=request.soil,
         crop=request.crop,
@@ -99,34 +122,44 @@ def full_diagnosis(request: FullDiagnosisRequest):
 
 @app.post("/soil")
 def soil_diagnosis(soil: SoilAnalysis):
-    """Diagnòstic ràpid de sòl."""
     diagnosis = agent.quick_soil_check(soil)
     return utf8_json(diagnosis.model_dump())
 
 
 @app.post("/pests")
 def pest_check(request: PestCheckRequest):
-    """Consulta d'alertes fitosanitàries."""
     alerts = agent.quick_pest_check(request.crop, request.weather)
     return utf8_json([alert.model_dump() for alert in alerts])
 
 
 @app.post("/irrigation")
 def irrigation_plan(request: IrrigationRequest):
-    """Càlcul de necessitats de reg."""
     plan = agent.quick_irrigation(request.crop, request.weather)
     return utf8_json(plan.model_dump())
 
 
+# ─── ASSESSOR IA (GEMINI) ───
+
+@app.post("/chat")
+def chat_advisor(request: ChatRequest):
+    """Assessor agronòmic IA amb Gemini o respostes locals."""
+    response = ask_gemini(
+        question=request.question,
+        context=request.context,
+        api_key=request.api_key or None,
+    )
+    return utf8_json({"question": request.question, "answer": response})
+
+
+# ─── CULTIUS ───
+
 @app.get("/crops")
 def available_crops():
-    """Llista de cultius disponibles a la base de dades."""
     return utf8_json({"crops": list_crops()})
 
 
 @app.get("/crops/{name}")
 def crop_info(name: str):
-    """Informació detallada d'un cultiu."""
     crop = get_crop(name)
     if not crop:
         raise HTTPException(

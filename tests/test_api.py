@@ -116,3 +116,35 @@ class TestAPI:
         }
         response = client.post("/soil", json=payload)
         assert response.status_code == 422  # Validation error
+
+    def test_full_report_with_charts(self, client, diagnosis_payload):
+        response = client.post("/report", json=diagnosis_payload)
+        assert response.status_code == 200
+        data = response.json()
+        assert "soil_score" in data
+        assert "charts" in data
+        assert "economics" in data
+        assert "soil_radar" in data["charts"]
+        assert "npk_chart" in data["charts"]
+        assert "economic_chart" in data["charts"]
+
+    def test_report_economics_fields(self, client, diagnosis_payload):
+        response = client.post("/report", json=diagnosis_payload)
+        data = response.json()
+        econ = data["economics"]
+        assert "crop_name" in econ
+        assert "roi_percent" in econ
+        assert "total_savings_eur" in econ
+        assert "margin_with_eur_ha" in econ
+        assert econ["expected_yield_kg_ha"] > 0
+
+    def test_chat_offline(self, client):
+        response = client.post("/chat", json={
+            "question": "Com puc millorar el pH del meu sòl?",
+            "context": "",
+            "api_key": "",
+        })
+        assert response.status_code == 200
+        data = response.json()
+        assert "answer" in data
+        assert len(data["answer"]) > 10

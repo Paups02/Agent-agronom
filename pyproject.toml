@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agronom-agent"
-version = "1.0.0"
+version = "2.0.0"
 description = "Agent IA agronòmic professional per a diagnòstic de sòl, fertilització intel·ligent, alertes fitosanitàries i planificació de reg"
 readme = "README.md"
 license = {text = "MIT"}
@@ -30,6 +30,8 @@ dependencies = [
     "httpx>=0.25.0",
     "rich>=13.7.0",
     "typer>=0.9.0",
+    "matplotlib>=3.8.0",
+    "google-generativeai>=0.8.0",
 ]
 
 [project.optional-dependencies]

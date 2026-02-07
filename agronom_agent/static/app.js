@@ -1,4 +1,4 @@
-/* AgroNom Agent — Frontend SaaS */
+/* AgroNom Agent v2.0 — Frontend SaaS amb gràfics, economia i xat IA */
 
 const API = window.location.origin;
 
@@ -68,7 +68,7 @@ function renderCropCard(name, crop) {
   `;
 }
 
-/* ===== SUBMIT DIAGNOSIS ===== */
+/* ===== SUBMIT DIAGNOSIS (v2 — /report amb gràfics i economia) ===== */
 async function submitDiagnosis() {
   const btn = document.getElementById('submit-btn');
   const loading = document.getElementById('loading');
@@ -76,7 +76,7 @@ async function submitDiagnosis() {
   const wizard = document.querySelector('.form-wizard');
 
   btn.disabled = true;
-  btn.textContent = 'Analitzant...';
+  btn.textContent = 'Generant informe...';
   loading.classList.remove('hidden');
   results.classList.add('hidden');
 
@@ -109,7 +109,7 @@ async function submitDiagnosis() {
   };
 
   try {
-    const res = await fetch(`${API}/diagnosis`, {
+    const res = await fetch(`${API}/report`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -132,11 +132,11 @@ async function submitDiagnosis() {
     results.innerHTML = `<div class="result-block"><div class="result-block-body"><p style="color:var(--red-500)">Error: ${e.message}</p></div></div>`;
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Generar Diagnòstic Complet';
+    btn.textContent = 'Generar Informe Complet amb Gràfics';
   }
 }
 
-/* ===== RENDER REPORT ===== */
+/* ===== RENDER REPORT (v2 — amb gràfics i economia) ===== */
 function renderReport(r) {
   const scoreClass = r.soil_score >= 70 ? 'score-high' : r.soil_score >= 40 ? 'score-mid' : 'score-low';
   const scoreLabel = r.soil_score >= 70 ? 'Bon estat' : r.soil_score >= 40 ? 'Millorable' : 'Atenció urgent';
@@ -156,6 +156,120 @@ function renderReport(r) {
       <button class="btn btn-secondary" onclick="resetForm()">Nou diagnòstic</button>
     </div>
   `;
+
+  // Charts section
+  if (r.charts) {
+    html += `
+      <div class="result-block">
+        <div class="result-block-header"><span class="icon">📊</span> Gràfics d'Anàlisi</div>
+        <div class="result-block-body">
+          <div class="charts-grid">
+            ${r.charts.soil_radar ? `
+              <div class="chart-card">
+                <img src="data:image/png;base64,${r.charts.soil_radar}" alt="Radar salut del sòl">
+                <div class="chart-label">Salut del Sòl</div>
+              </div>
+            ` : ''}
+            ${r.charts.npk_chart ? `
+              <div class="chart-card">
+                <img src="data:image/png;base64,${r.charts.npk_chart}" alt="Pla NPK">
+                <div class="chart-label">Fertilització NPK</div>
+              </div>
+            ` : ''}
+            ${r.charts.irrigation_chart ? `
+              <div class="chart-card">
+                <img src="data:image/png;base64,${r.charts.irrigation_chart}" alt="Necessitats hídriques">
+                <div class="chart-label">Necessitats Hídriques</div>
+              </div>
+            ` : ''}
+            ${r.charts.economic_chart ? `
+              <div class="chart-card">
+                <img src="data:image/png;base64,${r.charts.economic_chart}" alt="Comparativa econòmica">
+                <div class="chart-label">Comparativa Econòmica</div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Economics section
+  if (r.economics) {
+    const e = r.economics;
+    html += `
+      <div class="result-block">
+        <div class="result-block-header"><span class="icon">💰</span> Anàlisi Econòmica — ${e.crop_name} (${e.area_hectares} ha)</div>
+        <div class="result-block-body">
+          <div class="econ-grid">
+            <div class="econ-card highlight">
+              <div class="econ-value">${formatEur(e.annual_profit_eur)}</div>
+              <div class="econ-label">Benefici anual estimat</div>
+            </div>
+            <div class="econ-card highlight">
+              <div class="econ-value">${e.roi_percent}%</div>
+              <div class="econ-label">ROI assessoria</div>
+            </div>
+            <div class="econ-card">
+              <div class="econ-value">${formatEur(e.extra_profit_eur_ha)}</div>
+              <div class="econ-label">Benefici extra per ha</div>
+            </div>
+            <div class="econ-card">
+              <div class="econ-value">${formatEur(e.total_savings_eur)}</div>
+              <div class="econ-label">Estalvi total finca</div>
+            </div>
+          </div>
+
+          <table class="econ-table">
+            <tr><th>Concepte</th><th>Amb AgroNom</th><th>Sense assessoria</th><th>Estalvi</th></tr>
+            <tr>
+              <td>Fertilitzants</td>
+              <td>${formatEur(e.fert_cost_with)}/ha</td>
+              <td>${formatEur(e.fert_cost_without)}/ha</td>
+              <td class="saving">${formatEur(e.fert_cost_without - e.fert_cost_with)}/ha</td>
+            </tr>
+            <tr>
+              <td>Fitosanitaris</td>
+              <td>${formatEur(e.phyto_cost_with)}/ha</td>
+              <td>${formatEur(e.phyto_cost_without)}/ha</td>
+              <td class="saving">${formatEur(e.phyto_cost_without - e.phyto_cost_with)}/ha</td>
+            </tr>
+            <tr>
+              <td>Reg</td>
+              <td>${formatEur(e.irrig_cost_with)}/ha</td>
+              <td>${formatEur(e.irrig_cost_without)}/ha</td>
+              <td class="saving">${formatEur(e.irrig_cost_without - e.irrig_cost_with)}/ha</td>
+            </tr>
+            <tr style="font-weight:700;border-top:2px solid var(--gray-200);">
+              <td>Marge net</td>
+              <td>${formatEur(e.margin_with_eur_ha)}/ha</td>
+              <td>${formatEur(e.margin_without_eur_ha)}/ha</td>
+              <td class="saving">${formatEur(e.extra_profit_eur_ha)}/ha</td>
+            </tr>
+          </table>
+
+          <div class="econ-grid" style="margin-top:20px;">
+            <div class="econ-card">
+              <div class="econ-value">${e.expected_yield_kg_ha} kg</div>
+              <div class="econ-label">Rendiment esperat/ha</div>
+            </div>
+            <div class="econ-card">
+              <div class="econ-value">${formatEur(e.gross_income_eur_ha)}</div>
+              <div class="econ-label">Ingressos bruts/ha</div>
+            </div>
+            <div class="econ-card">
+              <div class="econ-value">${e.water_saved_m3_ha} m³</div>
+              <div class="econ-label">Aigua estalviada/ha</div>
+            </div>
+            <div class="econ-card">
+              <div class="econ-value">${e.fertilizer_saved_kg_ha} kg</div>
+              <div class="econ-label">Fertilitzant estalviat/ha</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 
   // Priority actions
   html += `
@@ -288,20 +402,95 @@ function renderReport(r) {
     `;
   }
 
-  // Savings
-  if (r.estimated_savings_eur > 0) {
-    html += `
-      <div class="result-block">
-        <div class="result-block-header"><span class="icon">💰</span> Estalvi Estimat</div>
-        <div class="result-block-body">
-          <p style="font-size:1.3rem;font-weight:800;color:var(--green-700);">${r.estimated_savings_eur} € d'estalvi estimat</p>
-          <p style="color:var(--gray-500);font-size:.9rem;margin-top:4px;">Comparant amb fertilització genèrica sense assessoria.</p>
+  return html;
+}
+
+/* ===== FORMAT HELPERS ===== */
+function formatEur(val) {
+  if (val == null) return '—';
+  return new Intl.NumberFormat('ca-ES', {
+    style: 'currency', currency: 'EUR',
+    minimumFractionDigits: 0, maximumFractionDigits: 0,
+  }).format(val);
+}
+
+/* ===== CHAT IA ===== */
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const messages = document.getElementById('chat-messages');
+  const sendBtn = document.getElementById('chat-send-btn');
+  const question = input.value.trim();
+
+  if (!question) return;
+
+  // Add user message
+  messages.innerHTML += `
+    <div class="chat-msg user">
+      <div class="chat-avatar">👤</div>
+      <div class="chat-bubble">
+        <strong>Tu</strong>
+        <p>${escapeHtml(question)}</p>
+      </div>
+    </div>
+  `;
+  input.value = '';
+  sendBtn.disabled = true;
+  sendBtn.textContent = 'Pensant...';
+  messages.scrollTop = messages.scrollHeight;
+
+  try {
+    const apiKey = document.getElementById('gemini-key').value.trim();
+    const res = await fetch(`${API}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question: question,
+        context: '',
+        api_key: apiKey,
+      }),
+    });
+
+    if (!res.ok) throw new Error('Error del servidor');
+
+    const data = await res.json();
+    messages.innerHTML += `
+      <div class="chat-msg bot">
+        <div class="chat-avatar">🌱</div>
+        <div class="chat-bubble">
+          <strong>AgroNom IA</strong>
+          <p>${formatMarkdown(data.answer)}</p>
         </div>
       </div>
     `;
+  } catch (e) {
+    messages.innerHTML += `
+      <div class="chat-msg bot">
+        <div class="chat-avatar">🌱</div>
+        <div class="chat-bubble">
+          <strong>AgroNom IA</strong>
+          <p style="color:var(--red-500)">Error de connexió. Torna-ho a provar.</p>
+        </div>
+      </div>
+    `;
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'Enviar';
+    messages.scrollTop = messages.scrollHeight;
   }
+}
 
-  return html;
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function formatMarkdown(text) {
+  // Basic markdown: bold, lists
+  return escapeHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n- /g, '\n• ')
+    .replace(/\n(\d+)\. /g, '\n$1. ');
 }
 
 /* ===== RESET ===== */

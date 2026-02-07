@@ -19,6 +19,7 @@
       <a href="#" onclick="showSection('hero')">Inici</a>
       <a href="#" onclick="showSection('diagnosis-section')">Diagnòstic</a>
       <a href="#" onclick="showSection('crops-section')">Cultius</a>
+      <a href="#" onclick="showSection('chat-section')">Assessor IA</a>
       <a href="#" onclick="showSection('about-section')">Com funciona</a>
     </div>
   </div>
@@ -27,9 +28,9 @@
 <!-- HERO -->
 <section id="hero" class="hero">
   <div class="hero-content">
-    <div class="hero-badge">Agent IA Agronòmic Professional</div>
+    <div class="hero-badge">Agent IA Agronòmic Professional v2.0</div>
     <h1>Assessoria agronòmica<br><span class="gradient-text">intel·ligent i accessible</span></h1>
-    <p class="hero-sub">Diagnòstic de sòl, fertilització personalitzada, alertes fitosanitàries i planificació de reg — tot basat en dades reals i ciència agronòmica.</p>
+    <p class="hero-sub">Diagnòstic de sòl, fertilització personalitzada, alertes fitosanitàries, planificació de reg, gràfics professionals i anàlisi econòmica — tot basat en dades reals i ciència agronòmica.</p>
     <div class="hero-stats">
       <div class="stat">
         <div class="stat-value">13</div>
@@ -44,11 +45,18 @@
         <div class="stat-label">Estàndard de reg</div>
       </div>
       <div class="stat">
+        <div class="stat-value">ROI</div>
+        <div class="stat-label">Anàlisi econòmica</div>
+      </div>
+      <div class="stat">
         <div class="stat-value">0 €</div>
         <div class="stat-label">Cost per l'agricultor</div>
       </div>
     </div>
-    <button class="btn btn-primary btn-lg" onclick="showSection('diagnosis-section')">Començar diagnòstic gratuït</button>
+    <div class="hero-buttons">
+      <button class="btn btn-primary btn-lg" onclick="showSection('diagnosis-section')">Diagnòstic complet amb gràfics</button>
+      <button class="btn btn-secondary btn-lg" onclick="showSection('chat-section')">Consultar Assessor IA</button>
+    </div>
   </div>
 </section>
 
@@ -75,7 +83,7 @@
       <div class="problem-card solution">
         <div class="problem-icon">🌱</div>
         <h3>La nostra solució</h3>
-        <p>IA agronòmica que analitza el teu sòl, cultiu i clima per donar-te recomanacions professionals instantànies.</p>
+        <p>IA agronòmica que analitza sòl, cultiu i clima per donar-te recomanacions professionals amb gràfics, economia i assessor IA integrat.</p>
       </div>
     </div>
   </div>
@@ -84,8 +92,8 @@
 <!-- DIAGNOSIS FORM -->
 <section id="diagnosis-section" class="section">
   <div class="container">
-    <h2 class="section-title">Diagnòstic Integral</h2>
-    <p class="section-sub">Introdueix les dades de la teva finca i obtindràs un informe professional complet.</p>
+    <h2 class="section-title">Diagnòstic Integral amb Gràfics</h2>
+    <p class="section-sub">Introdueix les dades de la teva finca i obtindràs un informe professional amb gràfics, anàlisi econòmica i recomanacions.</p>
 
     <div class="form-wizard">
       <!-- STEP INDICATORS -->
@@ -237,7 +245,7 @@
           <div class="form-actions">
             <button type="button" class="btn btn-secondary" onclick="nextStep(2)">← Cultiu</button>
             <button type="button" class="btn btn-primary btn-lg" onclick="submitDiagnosis()" id="submit-btn">
-              Generar Diagnòstic Complet
+              Generar Informe Complet amb Gràfics
             </button>
           </div>
         </div>
@@ -247,7 +255,7 @@
     <!-- LOADING -->
     <div id="loading" class="loading hidden">
       <div class="spinner"></div>
-      <p>Analitzant les dades de la teva finca...</p>
+      <p>Analitzant les dades, generant gràfics i calculant rendibilitat...</p>
     </div>
 
     <!-- RESULTS -->
@@ -255,8 +263,40 @@
   </div>
 </section>
 
+<!-- AI CHAT -->
+<section id="chat-section" class="section section-alt">
+  <div class="container">
+    <h2 class="section-title">Assessor Agronòmic IA</h2>
+    <p class="section-sub">Pregunta qualsevol dubte sobre cultius, sòls, plagues, fertilització o reg. Respostes professionals basades en ciència agronòmica.</p>
+
+    <div class="chat-container">
+      <div class="chat-config">
+        <div class="form-group">
+          <label for="gemini-key">Clau API Gemini <span class="hint-inline">(opcional — respostes locals si no es configura)</span></label>
+          <input type="password" id="gemini-key" placeholder="AIzaSy...">
+        </div>
+      </div>
+
+      <div id="chat-messages" class="chat-messages">
+        <div class="chat-msg bot">
+          <div class="chat-avatar">🌱</div>
+          <div class="chat-bubble">
+            <strong>AgroNom IA</strong>
+            <p>Hola! Sóc l'assessor agronòmic d'AgroNom. Puc ajudar-te amb qualsevol qüestió sobre cultius, sòls, plagues, fertilització, reg o economia agrària. Fes-me una pregunta!</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="Escriu la teva pregunta agronòmica..." onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="btn btn-primary" onclick="sendChat()" id="chat-send-btn">Enviar</button>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- CROPS CATALOG -->
-<section id="crops-section" class="section section-alt">
+<section id="crops-section" class="section">
   <div class="container">
     <h2 class="section-title">Catàleg de Cultius</h2>
     <p class="section-sub">Base de coneixement amb 13 cultius mediterranis i les seves necessitats agronòmiques.</p>
@@ -270,7 +310,7 @@
     <div class="footer-inner">
       <div>
         <span class="logo"><span class="logo-icon">🌱</span> AgroNom</span>
-        <p class="footer-text">Agent IA agronòmic professional.<br>Democratitzant l'assessoria agrícola.</p>
+        <p class="footer-text">Agent IA agronòmic professional.<br>Democratitzant l'assessoria agrícola.<br>Gràfics, economia i assessor IA integrats.</p>
       </div>
       <div class="footer-links">
         <p><strong>API</strong></p>
@@ -280,11 +320,11 @@
       </div>
       <div class="footer-links">
         <p><strong>Fonts</strong></p>
-        <p class="footer-text">MAPA, IRTA, FAO-56<br>Penman-Monteith</p>
+        <p class="footer-text">MAPA, IRTA, FAO-56<br>Penman-Monteith<br>CaixaBank Research 2024-25</p>
       </div>
     </div>
     <div class="footer-bottom">
-      <p>AgroNom Agent v1.0.0 — Tecnologia al servei del camp</p>
+      <p>AgroNom Agent v2.0.0 — Tecnologia al servei del camp</p>
     </div>
   </div>
 </footer>
